@@ -1,0 +1,8 @@
+(define (compose f1 f2)
+    (lambda (args)
+        (f1 (f2 args))))
+
+(define (flip f)
+    (lambda (x1 x2)
+        (f x2 x1)))
+

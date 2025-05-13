@@ -1,0 +1,88 @@
+;; Partition a list of integers into two subsets such that the difference between
+;; the sums of the subsets is minimized using simulated annealing.
+;; Ex: 
+;;    Given (10 20 15 5 25), the solution is:
+;;      (10 20 5) = 35, (15 25) = 40, |35 - 40| = 5.
+
+
+(define (score part1 part2)
+    (abs (- (sum part1) (sum part2)))
+)
+
+(define (randlst low high len)
+    (define (_randlst low high len acc)
+        (if (= len 0)
+            acc
+            (_randlst low high (- len 1) (cons (randint low high) acc))
+        )
+    )
+    (_randlst low high len '())
+)
+
+
+
+
+(begin
+    ;; initial setup
+    (define master_lst (randlst 0 100 10))
+    (define part1 (slice 0 5 master_lst))
+    (define part2 (slice 5 (length master_lst) master_lst))
+    (define sc0re (score part1 part2))
+    (define temp 100)
+    (print master_lst)
+    (print part1)
+    (print part2)
+    (print sc0re)
+    (print temp)
+
+    (define partA '())
+    (define partB '())
+    (if (bias-flip 50)
+        (begin
+            (set! partA part1)
+            (set! partB part2)
+        )
+        (begin
+            (set! partB part1)
+            (set! partA part2)
+        )
+    )
+    (define new_part1 '())
+    (define new_part2 '())
+    (let ((idx (randint 0 (- (length partA) 1))))
+        (let ((val (index idx partA)))
+            (set! new_part1 (+ (slice 0 idx partA) (slice (+ idx 1) (length partA) partA)))
+            (set! new_part2 (cons val partB))    
+        )
+    )
+    (print new_part1)
+    (print new_part2)
+
+    ;; evaluate
+    (define new_sc0re (score new_part1 new_part2))
+    (print new_sc0re)
+
+    ;; acceptance
+    (if (< new_sc0re sc0re)
+        ;; TODO make this a macro
+        (begin
+            (set! part1 new_part1)
+            (set! part2 new_part2)
+        )
+        (let ((acceptance_p (exp (* -1 (/ new_sc0re temp)))))
+            (print acceptance_p)
+            (if (bias-flip acceptance_p)
+                (begin
+                    (set! part1 new_part1)
+                    (set! part2 new_part2)
+                )
+            )
+        )
+
+    )
+    (set! temp (- temp 1))
+    (print part1)
+    (print part2)
+    (print temp)
+)
+    

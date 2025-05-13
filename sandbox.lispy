@@ -1,0 +1,181 @@
+(define (plus1 x)
+    (+ x 1))
+
+
+(define (sum lst)
+    (define (sm lst acc)
+        (if (null? lst)
+            acc
+            (sm (cdr lst) (+ (car lst) acc))
+        )
+    )
+    (sm lst 0)
+)
+
+
+(define (map fun lst)
+    (define (mp fun lst acc)
+        (if (null? lst)
+            acc
+            (mp fun (cdr lst) (append (fun (car lst)) acc))
+        )
+    )
+    (mp fun lst '())
+)
+
+(define (fold op lst acc)
+    (if (null? lst)
+        acc
+        (fold op (cdr lst) (op acc (car lst)))
+    )
+)
+
+
+(define (reverse lst)
+    (define (rev lst acc)
+        (if (null? lst) 
+            acc
+            (rev (cdr lst) (cons (car lst) acc)))
+    )
+    (rev lst '())
+)
+
+
+;; TODO define = for lists to make this better
+(define (member itm lst)
+    (if (null? lst)
+        #f
+        (if (= itm (car lst))
+            #t
+            (member itm (cdr lst))
+        )
+    )
+)
+
+
+;; TODO get rid of eval in conditional
+;; TODO fix the way > and < evaluate
+(define (map-if fun cond lst)
+    (define (mp-if fun cond lst acc)
+        (if (null? lst)
+            acc
+            (if (eval `(,@cond ,(car lst)))
+                (mp-if fun cond (cdr lst) (append (fun (car lst)) acc))
+                (mp-if fun cond (cdr lst) acc)
+            )
+        )
+    )
+    (mp-if fun cond lst '())
+)
+
+
+(define-macro (list-comp exp1 for exp2 in lst if cond)
+    `(map-if (lambda (,exp2) ,exp1) ,cond ,lst)
+)
+
+
+(define-macro and (lambda args 
+   (if (null? args) #t
+       (if (= (length args) 1) (car args)
+           `(if ,(car args) (and ,@(cdr args)) #f)))))
+
+
+(define-macro (not expr)
+    (if expr
+        #f
+        #t
+    ))
+
+
+(define-macro or (lambda args
+    (if (null? args)
+        #t
+        (if (= (length args) 1)
+            (car args)
+            `(if ,(car args)
+                #t
+                (or ,@(cdr args)))))))
+
+
+(define random
+  (let ((a 69069) (c 1) (m (pow 2 32)) (seed 19380110))
+    (lambda new-seed
+      (if (pair? new-seed)
+          (set! seed (car new-seed))
+          (set! seed (modulo (+ (* seed a) c) m)))
+      (/ seed m))))
+
+
+;; (randint [lo] hi)
+(define (randint &rest args)
+    (if (= (length args) 1)
+        (floor (* (random) (car args)))
+    )
+    (if (= (length args) 2)
+        (+ (car args) (floor (* (random) (- (car (cdr args)) (car args)))))))
+
+
+;; creates a closure that applies function f n times, returns identity function for n <= 0
+(define (apply-n f n)
+    (define (app-n f n acc)
+        (if (<= n 0)
+            (lambda (x) `(,@x))
+            (if (= n 1)
+                acc
+                (app-n f (- n 1) (lambda (x) (f (acc x)))))))
+    (app-n f n f))
+
+
+;; macro for accessing an element of a list by its index
+;; an index <= 0 will return the first element
+(define-macro (index idx lst)
+    `(car ((apply-n cdr ,idx) ,lst)))
+
+;; returns slice of a lst from low (inclusive) to high (exclusive)
+(define (slice low high lst)
+    (let ((start ((apply-n cdr low) lst)))
+        (define (chop lst high acc)
+            (if (= 0 high)
+                acc
+                (chop (cdr lst) (- high 1) (append (car lst) acc))
+            )
+        )
+        (chop start (- high low) '())
+    )
+)
+
+
+;; replace element in lst at idx with val (not in place)
+;; returns null if idx is less than 0 and error if out of bounds
+(define (replace idx lst val)
+    (define (rplc idx lst val acc)
+        (if (= (length acc) (length lst))
+            acc
+            (if (= (length acc) idx)
+                (rplc idx lst val (append val acc))
+                (rplc idx lst val (append (index (length acc) lst) acc))
+            )
+        )
+    )
+    (if (or (< idx 0) (> idx (- (length lst) 1)))
+        '()
+        (rplc idx lst val '())
+    )
+)
+
+
+;; TODO change to let binding
+;; swap two elements at indexes idx1 and idx2 in lst (not in place)
+;; returns null if idx is less than 0 and error if out of bounds
+(define (swap idx1 idx2 lst)
+    (define temp_val (index idx1 lst))
+    (define temp_lst (replace idx1 lst (index idx2 lst)))
+    (replace idx2 temp_lst temp_val)
+)
+
+
+(define (bias-flip prob)
+    (let ((num (randint 0 101)))
+        (<= num prob)))
+
+(define lst '(1 2 3 4 5 6 7 8 9 10))
