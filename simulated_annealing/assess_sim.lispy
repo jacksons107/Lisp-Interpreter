@@ -1,0 +1,15 @@
+;; Works pretty well on most cases but on some cases that start at the optimal
+;; solution is ends up diverging sometimes far from the optimal solution.
+;; Seems to be more efficient on larger samples (larger search space).
+;; Have to manually tune hyper-parameters which is annoying.
+
+(begin
+    (load "annealing.lispy")
+
+    (define master_lst (randlst 0 100 10))
+    ;;(define master_lst '(75 48 90 60 17 78 15 87 81 24))  ;; this case starts at the optimal solution and often diverges far from it
+
+    (print master_lst)
+    (run-sim master_lst 10 9 0.1 1000)
+)
+
