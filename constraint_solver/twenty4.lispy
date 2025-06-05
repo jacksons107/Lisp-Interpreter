@@ -1,0 +1,84 @@
+;; require
+(define-macro (require cond)
+    `(lambda (succ fail)
+        (if ,cond
+            (succ 'done fail)
+            (fail)
+        )   
+    )
+)
+
+;; restrict
+(define-macro (restrict var choices)
+  `(lambda (succ fail)
+     (define (helper choices)
+       (if (null? choices)
+           (fail)
+           (let ((old-val ,var))
+             (set! ,var (car choices))
+             (succ 'ok
+                   (lambda ()
+                     (set! ,var old-val)
+                     (helper (cdr choices)))))))
+     (helper ,choices)))
+
+;; constrain
+(define-macro (constrain &rest exprs)
+  (if (null? exprs)
+        '(lambda (succ fail) (succ 'done fail))
+        `(lambda (succ fail)
+            (,(car exprs)
+                (lambda (_ fail2) ((constrain ,@(cdr exprs)) succ fail2))
+                fail))))
+
+;; safeDiv
+(define (safeDiv x y)
+    (if (= y 0)
+        -100
+        (/ x y)
+    )
+)
+
+;; eval24
+(define (eval24 a b c d op1 op2 op3)
+  ((car op1) a ((car op2) b ((car op3) c d))))
+
+;; pretty24
+(define (pretty24 a b c d op1 op2 op3)
+    (print `(((,c ,@(cdr op3) ,d) ,@(cdr op2) ,b) ,@(cdr op1) ,a))
+)
+
+;; program
+(define a 'null)
+(define b 'null)
+(define c 'null)
+(define d 'null)
+(define op1 'null)
+(define op2 'null)
+(define op3 'null)
+
+(define nums '(1 2 3 4 5 6 7 8 9 10 11 12 13))
+(define ops
+  (list
+   (cons + '+)
+   (cons - '-)
+   (cons * '*)
+   (cons safeDiv '/)))
+
+
+(define (succ val fail)
+    (pretty24 a b c d op1 op2 op3)
+    (fail))
+
+(define (fail) (print 'no-more-solutions))
+
+(define prog (constrain 
+    (restrict a nums)
+    (restrict b nums)
+    (restrict c nums)
+    (restrict d nums)
+    (restrict op1 ops)
+    (restrict op2 ops)
+    (restrict op3 ops)
+    (require (= (eval24 a b c d op1 op2 op3) 24))))
+(prog succ fail)
