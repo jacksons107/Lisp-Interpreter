@@ -111,7 +111,8 @@ def atom(token):
     if token == '#t': return True
     elif token == '#f': return False
     # elif token[0] == '"': return token[1:-1].decode('string_escape')
-    elif token[0] == '"': return bytes(token[1:-1], "utf-8").decode("unicode_escape")
+    # elif token[0] == '"': return bytes(token[1:-1], "utf-8").decode("unicode_escape")
+    elif token[0] == '"': return str(token[1:-1])   # CHANGED how strings work
     try: return int(token)
     except ValueError:
         try: return float(token)
@@ -125,7 +126,8 @@ def to_string(x):
     if x is True: return "#t"
     elif x is False: return "#f"
     elif isinstance(x, Symbol): return x
-    elif isinstance(x, str): return '"%s"' % x.encode('string_escape').replace('"',r'\"')
+    # elif isinstance(x, str): return '"%s"' % x.encode('string_escape').replace('"',r'\"')
+    elif isinstance(x, str): return x   # CHANGED how strings work
     elif isinstance(x, list): return '('+' '.join(map(to_string, x))+')'
     elif isinstance(x, complex): return str(x).replace('j', 'i')
     else: return str(x)
@@ -168,7 +170,7 @@ def add_globals(self):
     self.update(vars(math))
     self.update(vars(cmath))
     self.update({
-     '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 'not':op.not_, 
+     '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 
      '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 'modulo':op.mod, 'pow':math.pow, 'exp':math.exp,
      'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+list(y), 'floor':math.floor, 'abs':abs,
      'car':lambda x:x[0], 'cdr':lambda x:x[1:], 'append':lambda x,y:list(y)+[x],  
@@ -193,6 +195,7 @@ global_env = add_globals(Env())
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     while True:
+        # print(x)
         if isinstance(x, Symbol):       # variable reference
             return env.find(x)[x]
         elif not isinstance(x, list):   # constant literal
@@ -237,6 +240,7 @@ def parse(inport):
 
 def expand(x, toplevel=False):
     "Walk tree of x, making optimizations/fixes, and signaling SyntaxError."
+    # print(x)
     require(x, x!=[])                    # () => Error
     if not isinstance(x, list):                 # constant => unchanged
         return x
@@ -332,15 +336,18 @@ eval(parse("""(begin
        (if (= (length args) 1) (car args)
            `(if ,(car args) (and ,@(cdr args)) #f)))))
 
+(define-macro (not! expr)
+    `(if ,expr #f #t))
+           
 ;; More macros can go here
-(load "sandbox.lispy")
-(load "combinators.lispy")
-(load "annealing.lispy")
+;;(load "sandbox.lispy")
+;;(load "twenty4.lispy")
+;;(load "constraint_solver/cc_practice.lispy")
+(load "constraint_solver/twenty4.lispy")
 
-(define (reload) (load "annealing.lispy"))
+(define (reload) (load "constraint_solver/twenty4.lispy"))
 )"""))
 
-# eval(parse('(load "sandbox.lispy")'))
 
 
 if __name__ == "__main__":
