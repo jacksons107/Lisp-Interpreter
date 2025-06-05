@@ -1,4 +1,5 @@
 import sys
+import random
 import math
 import re
 import io
@@ -170,7 +171,7 @@ def add_globals(self):
     self.update(vars(math))
     self.update(vars(cmath))
     self.update({
-     '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 
+     '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 'randint': random.randint,
      '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 'modulo':op.mod, 'pow':math.pow, 'exp':math.exp,
      'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+list(y), 'floor':math.floor, 'abs':abs,
      'car':lambda x:x[0], 'cdr':lambda x:x[1:], 'append':lambda x,y:list(y)+[x],  
