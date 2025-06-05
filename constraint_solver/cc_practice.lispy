@@ -35,13 +35,15 @@
 
 
 ;; program
-(define (succ val fail) (print val))
-(define (fail) (print 'failed))
+(define (succ val fail)
+    (print `(,a ,b))
+    (fail))
+(define (fail) (print 'no-more-solutions))
 (define a 'null)
 (define b 'null)
 (define prog (constrain 
-    (restrict a '(2 3))
-    (restrict b '(5 6))
+    (restrict a '(1 2 3 4))
+    (restrict b '(5 6 7))
     (require (= (+ a b) 9))))
 (prog succ fail)
-(print `(,a ,b))
+
