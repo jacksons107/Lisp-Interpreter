@@ -10,16 +10,18 @@
 
 ;; restrict
 (define-macro (restrict var choices)
-    `(lambda (succ fail)
-        (if (null? ,choices)
-            (fail)
-            (begin
-                (set! ,var ,(car choices))
-                (succ 'ok (lambda () (restrict ,var ,(cdr choices))))
-            )
-        )
-    )
-)
+  `(lambda (succ fail)
+     (define (helper choices)
+       (if (null? choices)
+           (fail)
+           (let ((old-val ,var))
+             (set! ,var (car choices))
+             (succ 'ok
+                   (lambda ()
+                     (set! ,var old-val)
+                     (helper (cdr choices)))))))
+     (helper ,choices)))
+
 
 
 ;; constrain
