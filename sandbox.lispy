@@ -107,12 +107,12 @@
 
 
 ;; (randint [lo] hi)
-(define (randint &rest args)
-    (if (= (length args) 1)
-        (floor (* (random) (car args)))
-    )
-    (if (= (length args) 2)
-        (+ (car args) (floor (* (random) (- (car (cdr args)) (car args)))))))
+;; (define (randint &rest args)
+;;     (if (= (length args) 1)
+;;         (floor (* (random) (car args)))
+;;     )
+;;     (if (= (length args) 2)
+;;         (+ (car args) (floor (* (random) (- (car (cdr args)) (car args)))))))
 
 
 ;; creates a closure that applies function f n times, returns identity function for n <= 0
@@ -171,6 +171,15 @@
     (define temp_val (index idx1 lst))
     (define temp_lst (replace idx1 lst (index idx2 lst)))
     (replace idx2 temp_lst temp_val)
+)
+
+(define (shuffle lst times)
+    (if (= times 0)
+        lst
+        (let ((new_lst (swap (randint 0 (- (length lst) 1)) (randint 0 (- (length lst) 1)) lst)))
+            (shuffle new_lst (- times 1))
+        )
+    )
 )
 
 
