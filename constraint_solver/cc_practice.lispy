@@ -1,7 +1,7 @@
 ;; require
-(define-macro (require cond succ fail)
-    (lambda (cond succ fail)
-        (if (cond)
+(define-macro (require cond)
+    `(lambda (succ fail)
+        (if ,cond
             (succ 'done fail)
             (fail)
         )   
@@ -9,22 +9,18 @@
 )
 
 ;; restrict
-(define-macro (restrict var choices succ fail)
-    `(lambda (,var ,choices ,succ ,fail)
+(define-macro (restrict var choices)
+    `(lambda (succ fail)
         (if (null? ,choices)
             (fail)
             (begin
                 (set! ,var ,(car choices))
-                (define (new_fail)
-                    (restrict ,var ,succ ,fail ,(cdr choices))
-                )
-                ;; (<next_function> var succ new_fail)
-                ;; (set! fail new_fail)
-                (succ 'ok new_fail)
+                (succ 'ok (lambda () (restrict ,var ,(cdr choices))))
             )
         )
     )
 )
+
 
 ;; constrain
 (define-macro (constrain &rest exprs)
@@ -32,9 +28,8 @@
         '(lambda (succ fail) (succ 'done fail))
         `(lambda (succ fail)
             (,(car exprs)
-            (lambda (_ fail2)
-            ((constrain ,@(cdr exprs)) succ fail2))
-            fail))))
+                (lambda (_ fail2) ((constrain ,@(cdr exprs)) succ fail2))
+                fail))))
 
 
 ;; program
@@ -42,10 +37,9 @@
 (define (fail) (print 'failed))
 (define a 'null)
 (define b 'null)
-(constrain 
-    ((restrict a '(2 3))
-     (restrict b '(5 6))
-     (require (= (+ a b) 9)))
-     succ
-     fail)
+(define prog (constrain 
+    (restrict a '(2 3))
+    (restrict b '(5 6))
+    (require (= (+ a b) 9))))
+(prog succ fail)
 (print `(,a ,b))
