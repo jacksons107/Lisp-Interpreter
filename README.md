@@ -4,4 +4,4 @@ of the projects that I am writing with this language.
 
 The first of these projects is exploring [simulated annealing](simulated_annealing/).
 
-The second is a constraint solver that uses techniques of non-deterministic programming.
+The second is a [constraint solver](constraint_solver/) that uses techniques of non-deterministic programming.
