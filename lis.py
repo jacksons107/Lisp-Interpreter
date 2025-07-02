@@ -164,6 +164,12 @@ def callcc(proc):
         if w is ball: return ball.retval
         else: raise w
 
+def cons(x, y):
+    # proper list on the right → stitch it on the front
+    if isinstance(y, list):
+        return [x] + y
+    else:                   # keep dotted‑pair form only for true improper lists
+        return [x, y]
 
 def add_globals(self):
     "Add some Scheme standard procedures."
@@ -173,8 +179,8 @@ def add_globals(self):
     self.update({
      '+':op.add, '-':op.sub, '*':op.mul, '/':op.truediv, 'randint': random.randint,
      '>':op.gt, '<':op.lt, '>=':op.ge, '<=':op.le, '=':op.eq, 'modulo':op.mod, 'pow':math.pow, 'exp':math.exp,
-     'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':lambda x,y:[x]+list(y), 'floor':math.floor, 'abs':abs,
-     'car':lambda x:x[0], 'cdr':lambda x:x[1:], 'append':lambda x,y:list(y)+[x],  
+     'equal?':op.eq, 'eq?':op.is_, 'length':len, 'cons':cons, 'floor':math.floor, 'abs':abs,
+     'car':lambda x:x[0], 'cdr':lambda x:x[1:], 'append':lambda x,y:list(x)+list(y),  
      'list':lambda *x:list(x), 'list?': lambda x:isa(x,list),
      'null?':lambda x:x==[], 'symbol?':lambda x: isa(x, Symbol),
      'boolean?':lambda x: isa(x, bool), 'pair?':is_pair, 
@@ -196,6 +202,7 @@ global_env = add_globals(Env())
 def eval(x, env=global_env):
     "Evaluate an expression in an environment."
     while True:
+        # print("eval")
         # print(x)
         if isinstance(x, Symbol):       # variable reference
             return env.find(x)[x]
@@ -241,23 +248,29 @@ def parse(inport):
 
 def expand(x, toplevel=False):
     "Walk tree of x, making optimizations/fixes, and signaling SyntaxError."
+    # print("expand")
     # print(x)
     require(x, x!=[])                    # () => Error
     if not isinstance(x, list):                 # constant => unchanged
+        # print(1)
         return x
     elif x[0] is _quote:                 # (quote exp)
+        # print(2)
         require(x, len(x)==2)
         return x
     elif x[0] is _if:                    
+        # print(3)
         if len(x)==3: x = x + [None]     # (if t c) => (if t c None)
         require(x, len(x)==4)
         return list(map(expand, x))            # CHANGED to list()
     elif x[0] is _set:                   
+        # print(4)
         require(x, len(x)==3); 
         var = x[1]                       # (set! non-var exp) => Error
         require(x, isinstance(var, Symbol), "can set! only a symbol")
         return [_set, var, expand(x[2])]
     elif x[0] is _define or x[0] is _definemacro:
+        # print(5)
         require(x, len(x)>=3)            
         _def, v, body = x[0], x[1], x[2:]
         if isinstance(v, list) and v:           # (define (f args) body)
@@ -275,9 +288,11 @@ def expand(x, toplevel=False):
                 return None              #  => None; add v:proc to macro_table
             return [_define, v, exp]
     elif x[0] is _begin:
+        # print(6)
         if len(x)==1: return None        # (begin) => None
         else: return [expand(xi, toplevel) for xi in x]
     elif x[0] is _lambda:                # (lambda (x) e1 e2) 
+        # print("lambda")
         require(x, len(x)>=3)            #  => (lambda (x) (begin e1 e2))
         vars, body = x[1], x[2:]
         require(x, (isinstance(vars, list) and all(isinstance(v, Symbol) for v in vars))
@@ -285,11 +300,16 @@ def expand(x, toplevel=False):
         exp = body[0] if len(body) == 1 else [_begin] + body
         return [_lambda, vars, expand(exp)]   
     elif x[0] is _quasiquote:            # `x => expand_quasiquote(x)
+        # print(7)
         require(x, len(x)==2)
         return expand_quasiquote(x[1])
     elif isinstance(x[0], Symbol) and x[0] in macro_table:
+        # print(8)
+        # print("x[0]: ", x[0])
+        # print("*x[1:]: ", *x[1:])
         return expand(macro_table[x[0]](*x[1:]), toplevel) # (m arg...) 
     else:                                #        => macroexpand if m isinstance macro
+        # print(9)
         return list(map(expand, x))            # (f arg...) => expand each
 
 def require(x, predicate, msg="wrong length"):
@@ -302,6 +322,8 @@ def _splice(x, y):
 
 def expand_quasiquote(x):
     """Expand `x => 'x; `,x => x; `(,@x y) => (append x y) """
+    # print("quasi")
+    # print(x)
     if not is_pair(x):
         return [_quote, x]
     require(x, x[0] is not _unquotesplicing, "can't splice here")
@@ -337,6 +359,13 @@ eval(parse("""(begin
        (if (= (length args) 1) (car args)
            `(if ,(car args) (and ,@(cdr args)) #f)))))
 
+(define-macro (or &rest expr)
+    (if (null? expr)
+        #f
+        (if (car expr)
+            #t
+            `(or ,@(cdr expr)))))
+
 (define-macro (not! expr)
     `(if ,expr #f #t))
            
@@ -344,9 +373,10 @@ eval(parse("""(begin
 ;;(load "sandbox.lispy")
 ;;(load "twenty4.lispy")
 ;;(load "constraint_solver/cc_practice.lispy")
-(load "constraint_solver/twenty4.lispy")
+;;(load "constraint_solver/twenty4.lispy")
+;;(load "listcomp.lispy")
 
-(define (reload) (load "constraint_solver/twenty4.lispy"))
+(define (reload) (load "listcomp.lispy"))
 )"""))
 
 
